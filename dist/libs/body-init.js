@@ -9,14 +9,15 @@ const ipcRender = require('electron').ipcRenderer;
 const body = $('#main');
 let barcodeNumber = 0;
 const image_format = ['apng', 'bmp', 'gif', 'ico', 'cur', 'jpeg', 'jpg', 'jpeg', 'jfif', 'pjpeg',
-    'pjp', 'png', 'svg', 'tif', 'tiff', 'webp'];
+    'pjp', 'png', 'svg', 'tif', 'tiff', 'webp'
+];
 
-ipcRender.on('body-init', function (event, arg) {
-    body.css({width: arg.width ? arg.width : 170 , margin: arg.margin ? arg.margin : 0});
-    event.sender.send('body-init-reply', {status: true, error: null});
+ipcRender.on('body-init', function(event, arg) {
+    body.css({ width: arg.width ? arg.width : 170, margin: arg.margin ? arg.margin : 0 });
+    event.sender.send('body-init-reply', { status: true, error: null });
 });
 // render each line
-ipcRender.on('render-line', function (event, arg) {
+ipcRender.on('render-line', function(event, arg) {
     renderDataToHTML(event, arg);
 });
 
@@ -24,39 +25,41 @@ async function renderDataToHTML(event, arg) {
     switch (arg.line.type) {
         case 'text':
             try {
-              body.append(generatePageText(arg.line));
-              // sending msg
-              event.sender.send('render-line-reply', {status: true, error: null});
+                body.append(generatePageText(arg.line));
+                // sending msg
+                event.sender.send('render-line-reply', { status: true, error: null });
             } catch (e) {
-                event.sender.send('render-line-reply', {status: false, error: e.toString()});
+                event.sender.send('render-line-reply', { status: false, error: e.toString() });
             }
-        return;
+            return;
         case 'image':
             await getImageFromPath(arg.line)
                 .then(img => {
                     body.append(img);
-                    event.sender.send('render-line-reply', {status: true, error: null});
+                    img.load(() => {
+                        event.sender.send('render-line-reply', { status: true, error: null });
+                    })
                 }).catch(e => {
-                event.sender.send('render-line-reply', {status: false, error: e.toString()});
-            })
-        return;
+                    event.sender.send('render-line-reply', { status: false, error: e.toString() });
+                })
+            return;
         case 'qrCode':
             try {
                 body.append(`<div id="qrCode${arg.lineIndex}" style="${arg.line.style};text-align: ${arg.line.position ? '-webkit-' + arg.line.position : '-webkit-left'};"></div>`);
                 new QRCode(document.getElementById(`qrCode${arg.lineIndex}`), {
-                  text: arg.line.value,
-                  width: arg.line.width ? arg.line.width : 1,
-                  height: arg.line.height ? arg.line.height : 15,
-                  colorDark: '#000000',
-                  colorLight: '#ffffff',
-                  correctLevel: QRCode.CorrectLevel.H
+                    text: arg.line.value,
+                    width: arg.line.width ? arg.line.width : 1,
+                    height: arg.line.height ? arg.line.height : 15,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
                 });
-               // $(`#qrcode${barcodeNumber}`).attr('style',arg.style);
-               event.sender.send('render-line-reply', {status: true, error: null});
-            } catch(e) {
-                event.sender.send('render-line-reply', {status: false, error: e.toString()});
+                // $(`#qrcode${barcodeNumber}`).attr('style',arg.style);
+                event.sender.send('render-line-reply', { status: true, error: null });
+            } catch (e) {
+                event.sender.send('render-line-reply', { status: false, error: e.toString() });
             }
-        return;
+            return;
         case 'barCode':
             try {
                 body.append(`<div style="width: 100%;text-align: ${arg.line.position ? arg.line.position : 'left'}"class="barcode-container" style="text-align: center;width: 100%;">
@@ -69,11 +72,11 @@ async function renderDataToHTML(event, arg) {
                 jsbarcode-displayvalue="${!!arg.line.displayValue}"/></div>`);
                 JsBarcode(`.barCode${arg.lineIndex}`).init();
                 // send
-                event.sender.send('render-line-reply', {status: true, error: null});
-            } catch(e) {
-                event.sender.send('render-line-reply', {status: false, error: e.toString()});
+                event.sender.send('render-line-reply', { status: true, error: null });
+            } catch (e) {
+                event.sender.send('render-line-reply', { status: false, error: e.toString() });
             }
-        return;
+            return;
         case 'table':
             // Creating table
             const tableContainer = $(`
@@ -90,7 +93,7 @@ async function renderDataToHTML(event, arg) {
             const tFooter = $(`<tfoot style="${arg.line.tableFooterStyle}"></tfoot>`);
             // 1. Headers
             if (arg.line.tableHeader) {
-                arg.line.tableHeader.forEach(async (headerArg, index) => {
+                arg.line.tableHeader.forEach(async(headerArg, index) => {
                     if (typeof headerArg === "object") {
                         switch (headerArg.type) {
                             case 'image':
@@ -100,7 +103,7 @@ async function renderDataToHTML(event, arg) {
                                         th.append(img);
                                         tHeader.append(th);
                                     }).catch((e) => {
-                                        event.sender.send('render-line-reply', {status: false, error: e.toString()});
+                                        event.sender.send('render-line-reply', { status: false, error: e.toString() });
                                     })
                                 return;
                             case 'text':
@@ -117,7 +120,7 @@ async function renderDataToHTML(event, arg) {
             if (arg.line.tableBody) {
                 arg.line.tableBody.forEach((bodyRow) => {
                     const rowTr = $('<tr></tr>');
-                    bodyRow.forEach(async (colArg, index) => {
+                    bodyRow.forEach(async(colArg, index) => {
                         if (typeof colArg === 'object') {
                             switch (colArg.type) {
                                 case 'image':
@@ -127,7 +130,7 @@ async function renderDataToHTML(event, arg) {
                                             th.append(img);
                                             rowTr.append(th);
                                         }).catch((e) => {
-                                            event.sender.send('render-line-reply', {status: false, error: e.toString()});
+                                            event.sender.send('render-line-reply', { status: false, error: e.toString() });
                                         })
                                     return;
                                 case 'text':
@@ -144,7 +147,7 @@ async function renderDataToHTML(event, arg) {
             }
             // 3. Footer
             if (arg.line.tableFooter) {
-                arg.line.tableFooter.forEach(async (footerArg, index) => {
+                arg.line.tableFooter.forEach(async(footerArg, index) => {
                     if (typeof footerArg === 'object') {
                         switch (footerArg.type) {
                             case 'image':
@@ -154,7 +157,7 @@ async function renderDataToHTML(event, arg) {
                                         footerTh.append(img);
                                         tFooter.append(footerTh);
                                     }).catch((e) => {
-                                        event.sender.send('render-line-reply', {status: false, error: e.toString()});
+                                        event.sender.send('render-line-reply', { status: false, error: e.toString() });
                                     })
                                 return;
                             case 'text':
@@ -174,16 +177,16 @@ async function renderDataToHTML(event, arg) {
             tableContainer.append(table);
             body.append(tableContainer);
             // send
-            event.sender.send('render-line-reply', {status: true, error: null});
-        return;
+            event.sender.send('render-line-reply', { status: true, error: null });
+            return;
     }
 }
 /**
-* @function
+ * @function
  * @name generatePageText
  * @param arg {pass argumet of type PosPrintData}
  * @description used for type text, used to generate type text
-* */
+ * */
 function generatePageText(arg) {
     const text = arg.value;
     const css = arg.css;
@@ -198,11 +201,11 @@ function generatePageText(arg) {
     return div;
 }
 /**
-* @function
+ * @function
  * @name generateTableCell
  * @param arg {pass argumet of type PosPrintData}
  * @description used for type text, used to generate type text
-* */
+ * */
 function generateTableCell(arg, type = 'td') {
     const text = arg.value;
     const css = arg.css;
@@ -217,21 +220,26 @@ function generateTableCell(arg, type = 'td') {
     return th;
 }
 /**
-* @function
+ * @function
  * @name getImageFromPath
  * @param arg {pass argumet of type PosPrintData}
  * @description get image from path and return it as an html img
-* */
+ * */
 function getImageFromPath(arg) {
     return new Promise((resolve, reject) => {
-        const data = fs.readFileSync(arg.path);
-        let ext = path.extname(arg.path).slice(1);
+
+        if (arg.path.startsWith('http')) {
+
+        }
+
+        const data = arg.path.startsWith('http') ? arg.path : fs.readFileSync(arg.path);
+        let ext = arg.path.startsWith('http') ? "" : path.extname(arg.path).slice(1);
         if (image_format.indexOf(ext) === -1) {
-            reject(new Error(ext +' file type not supported, consider the types: ' + image_format.join()));
+            reject(new Error(ext + ' file type not supported, consider the types: ' + image_format.join()));
         }
         if (ext === 'svg') { ext = 'svg+xml'; }
         // insert image
-        const uri = 'data:image/' + ext + ';base64,' + data.toString('base64');
+        const uri = arg.path.startsWith('http') ? arg.path : 'data:image/' + ext + ';base64,' + data.toString('base64');
         const img_con = $(`<div style="width: 100%;text-align:${arg.position ? arg.position : 'left'}"></div>`);
         arg.style = arg.style ? arg.style : '';
         const img = $(`<img src="${uri}" style="height: ${arg.height ? arg.height : '50px'};width: ${arg.width ? arg.width : 'auto'};${arg.style}" />`);
