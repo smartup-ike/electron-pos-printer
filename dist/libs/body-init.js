@@ -237,7 +237,9 @@ function getImageFromPath(arg) {
         }
         if (ext === 'svg') { ext = 'svg+xml'; }
         // insert image
-        const uri = isBlob ? arg.path : 'data:image/' + ext + ';base64,' + data.toString('base64');
+        const uriIfBlob = arg.path.substring(5);
+        console.log(uriIfBlob);
+        const uri = isBlob ? uriIfBlob : 'data:image/' + ext + ';base64,' + data.toString('base64');
         const img_con = $(`<div style="width: 100%;text-align:${arg.position ? arg.position : 'left'}"></div>`);
         arg.style = arg.style ? arg.style : '';
         const img = $(`<img src="${uri}" style="height: ${arg.height ? arg.height : '50px'};width: ${arg.width ? arg.width : 'auto'};${arg.style}" />`);
