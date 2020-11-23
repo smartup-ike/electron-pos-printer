@@ -36,7 +36,8 @@ async function renderDataToHTML(event, arg) {
             await getImageFromPath(arg.line)
                 .then(img => {
                     body.append(img);
-                    img.load(() => {
+                    img.onload(() => {
+                        console.log('image loaded...' + img.src);
                         event.sender.send('render-line-reply', { status: true, error: null });
                     })
                 }).catch(e => {
