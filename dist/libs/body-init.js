@@ -228,18 +228,16 @@ function generateTableCell(arg, type = 'td') {
 function getImageFromPath(arg) {
     return new Promise((resolve, reject) => {
 
-        if (arg.path.startsWith('http')) {
+        const isBlob = arg.path.startsWith('blob');
 
-        }
-
-        const data = arg.path.startsWith('http') ? arg.path : fs.readFileSync(arg.path);
-        let ext = arg.path.startsWith('http') ? "" : path.extname(arg.path).slice(1);
+        const data = isBlob ? arg.path : fs.readFileSync(arg.path);
+        let ext = isBlob ? "" : path.extname(arg.path).slice(1);
         if (image_format.indexOf(ext) === -1) {
             reject(new Error(ext + ' file type not supported, consider the types: ' + image_format.join()));
         }
         if (ext === 'svg') { ext = 'svg+xml'; }
         // insert image
-        const uri = arg.path.startsWith('http') ? arg.path : 'data:image/' + ext + ';base64,' + data.toString('base64');
+        const uri = isBlob ? arg.path : 'data:image/' + ext + ';base64,' + data.toString('base64');
         const img_con = $(`<div style="width: 100%;text-align:${arg.position ? arg.position : 'left'}"></div>`);
         arg.style = arg.style ? arg.style : '';
         const img = $(`<img src="${uri}" style="height: ${arg.height ? arg.height : '50px'};width: ${arg.width ? arg.width : 'auto'};${arg.style}" />`);
